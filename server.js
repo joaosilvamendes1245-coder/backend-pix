@@ -26,12 +26,18 @@ function gerarNumeroPedido() {
 }
 
 app.get("/", (req, res) => {
-  res.send("Backend rodando 🔥");
+  res.send("Backend rodando");
 });
 
 app.post("/pedido", async (req, res) => {
   try {
     const { nome, email, produto, valor } = req.body;
+
+    if (!nome || !email || !produto || !valor) {
+      return res.status(400).json({
+        erro: "Campos obrigatórios: nome, email, produto, valor",
+      });
+    }
 
     const numeroPedido = gerarNumeroPedido();
 
@@ -52,107 +58,169 @@ app.post("/pedido", async (req, res) => {
 
     const dados = resultado.point_of_interaction?.transaction_data || {};
 
-    await supabase.from("pedidos").insert({
+    const { error } = await supabase.from("pedidos").insert({
       numero_pedido: numeroPedido,
       nome,
       email,
       produto,
-      valor,
-      status: resultado.status,
+      valor: Number(valor),
+      status: resultado.status || "pending",
       payment_id: String(resultado.id),
-      qr_code: dados.qr_code,
-      ticket_url: dados.ticket_url,
+      qr_code: dados.qr_code || null,
+      ticket_url: dados.ticket_url || null,
     });
+
+    if (error) {
+      return res.status(500).json({
+        erro: "Erro ao salvar pedido",
+        detalhe: error.message,
+      });
+    }
 
     res.json({
       numero_pedido: numeroPedido,
       payment_id: resultado.id,
       status: resultado.status,
-      qr_code: dados.qr_code,
-      ticket_url: dados.ticket_url,
+      qr_code: dados.qr_code || null,
+      ticket_url: dados.ticket_url || null,
     });
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ erro: "Erro ao criar pedido" });
+    console.log("ERRO AO CRIAR PEDIDO:", error);
+    res.status(500).json({
+      erro: "Erro ao criar pedido",
+      detalhe: error?.message || null,
+    });
   }
 });
 
 app.get("/pedido/:numero", async (req, res) => {
-  const { data } = await supabase
-    .from("pedidos")
-    .select("*")
-    .eq("numero_pedido", req.params.numero)
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from("pedidos")
+      .select("*")
+      .eq("numero_pedido", req.params.numero)
+      .single();
 
-  res.json(data);
+    if (error || !data) {
+      return res.status(404).json({ erro: "Pedido não encontrado" });
+    }
+
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({
+      erro: "Erro ao buscar pedido",
+      detalhe: error?.message || null,
+    });
+  }
 });
 
 app.post("/webhook", async (req, res) => {
   try {
+    console.log("WEBHOOK RECEBIDO:", JSON.stringify(req.body), req.query);
+
     const paymentId =
       req.body?.data?.id ||
-      req.query["data.id"];
+      req.body?.id ||
+      req.query["data.id"] ||
+      req.query.id;
 
-    if (!paymentId) return res.sendStatus(200);
+    if (!paymentId) {
+      return res.status(200).json({ ok: true, info: "sem payment id" });
+    }
 
     const payment = new Payment(client);
     const resultado = await payment.get({ id: paymentId });
 
-    await supabase
+    const dadosAtualizacao = {
+      status: resultado.status || "pending",
+    };
+
+    if (resultado.status === "approved") {
+      dadosAtualizacao.paid_at = new Date().toISOString();
+    }
+
+    const { error } = await supabase
       .from("pedidos")
-      .update({
-        status: resultado.status,
-        paid_at:
-          resultado.status === "approved"
-            ? new Date().toISOString()
-            : null,
-      })
+      .update(dadosAtualizacao)
       .eq("payment_id", String(paymentId));
 
-    res.sendStatus(200);
-  } catch (error) {
-    console.log("Erro webhook:", error);
-    res.sendStatus(200);
-  }
-});
+    if (error) {
+      console.log("ERRO AO ATUALIZAR PEDIDO:", error.message);
+    }
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log("Servidor rodando na porta " + PORT);
+    res.status(200).json({ ok: true });
+  } catch (error) {
+    console.log("ERRO WEBHOOK:", error);
+    res.status(200).json({
+      ok: false,
+      detalhe: error?.message || null,
+    });
+  }
 });
 
 app.get("/pix", async (req, res) => {
   try {
-    const { valor, email, nome, sobrenome } = req.query;
+    const { valor, email, nome, produto } = req.query;
 
-    if (!valor || !email || !nome || !sobrenome) {
-      return res.json({ erro: "Faltando dados" });
+    if (!valor || !email || !nome || !produto) {
+      return res.status(400).json({ erro: "Faltando dados" });
     }
+
+    const numeroPedido = gerarNumeroPedido();
 
     const payment = new Payment(client);
 
     const resultado = await payment.create({
       body: {
         transaction_amount: Number(valor),
-        description: "Pagamento via Pix",
+        description: `${produto} | Pedido ${numeroPedido}`,
         payment_method_id: "pix",
+        notification_url: `${process.env.BASE_URL}/webhook`,
         payer: {
-          email: email,
+          email,
           first_name: nome,
-          last_name: sobrenome,
         },
       },
     });
 
     const dados = resultado.point_of_interaction?.transaction_data || {};
 
+    const { error } = await supabase.from("pedidos").insert({
+      numero_pedido: numeroPedido,
+      nome,
+      email,
+      produto,
+      valor: Number(valor),
+      status: resultado.status || "pending",
+      payment_id: String(resultado.id),
+      qr_code: dados.qr_code || null,
+      ticket_url: dados.ticket_url || null,
+    });
+
+    if (error) {
+      return res.status(500).json({
+        erro: "Erro ao salvar pedido",
+        detalhe: error.message,
+      });
+    }
+
     res.json({
-      id: resultado.id,
+      numero_pedido: numeroPedido,
+      payment_id: resultado.id,
       status: resultado.status,
-      qr_code: dados.qr_code,
-      ticket_url: dados.ticket_url,
+      qr_code: dados.qr_code || null,
+      ticket_url: dados.ticket_url || null,
     });
   } catch (error) {
-    res.json({ erro: error.message });
+    console.log("ERRO AO GERAR PIX:", error);
+    res.status(500).json({
+      erro: "Erro ao gerar pix",
+      detalhe: error?.message || null,
+    });
   }
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Servidor rodando na porta ${PORT}`);
 });
