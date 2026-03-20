@@ -26,10 +26,6 @@ function gerarNumeroPedido() {
   return `PED-${agora.getTime()}-${rand}`;
 }
 
-app.get("/", (req, res) => {
-  res.send("Backend rodando");
-});
-
 app.post("/pedido", async (req, res) => {
   try {
     const { nome, email, produto, valor } = req.body;
