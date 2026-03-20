@@ -3,143 +3,76 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Pagamento WhatsApp</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #111827;
-      color: white;
-      padding: 20px;
-      margin: 0;
-    }
-
-    .box {
-      max-width: 420px;
-      margin: 0 auto;
-      background: #1f2937;
-      padding: 20px;
-      border-radius: 14px;
-    }
-
-    h1 {
-      font-size: 22px;
-      margin-bottom: 20px;
-      text-align: center;
-    }
-
-    input, button {
-      width: 100%;
-      padding: 14px;
-      margin-bottom: 12px;
-      border-radius: 10px;
-      border: none;
-      font-size: 16px;
-      box-sizing: border-box;
-    }
-
-    input {
-      background: #374151;
-      color: white;
-    }
-
-    button {
-      background: #22c55e;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    button:hover {
-      opacity: 0.95;
-    }
-
-    .small {
-      font-size: 13px;
-      color: #cbd5e1;
-      margin-top: 8px;
-      text-align: center;
-    }
-
-    .status {
-      margin-top: 10px;
-      font-size: 14px;
-      color: #facc15;
-      text-align: center;
-      min-height: 20px;
-    }
-  </style>
+  <title>Elite Mundi Store</title>
+  <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
-  <div class="box">
-    <h1>Gerar pedido e abrir WhatsApp</h1>
+  <div class="container">
+    <header class="hero">
+      <h1>Elite Mundi Store</h1>
+      <p>Escolha o serviço, selecione o plano e gere seu pagamento.</p>
+    </header>
 
-    <input type="text" id="nome" placeholder="Nome do cliente" />
-    <input type="email" id="email" placeholder="Email do cliente" />
-    <input type="text" id="telefone" placeholder="Telefone com DDD (ex: 5531999999999)" />
-    <input type="text" id="produto" placeholder="Produto" value="Seguidores Instagram" />
-    <input type="number" id="valor" placeholder="Valor" value="5" />
+    <section class="card">
+      <h2>1. Escolha o serviço</h2>
+      <div id="servicosGrid" class="grid-cards"></div>
+    </section>
 
-    <button onclick="criarPedidoEAbrirWhatsApp()">Gerar pedido</button>
+    <section class="card">
+      <h2>2. Escolha o plano</h2>
+      <div id="planosGrid" class="grid-cards"></div>
+    </section>
 
-    <div class="status" id="status"></div>
-    <div class="small">Depois o cliente só toca em enviar no WhatsApp.</div>
+    <section class="card">
+      <h2>3. Escolha a quantidade</h2>
+      <div id="quantidadesGrid" class="grid-cards qtd-grid"></div>
+
+      <div class="outros-box">
+        <button id="btnOutros" class="secondary-btn" type="button">Outros</button>
+        <input type="number" id="quantidadeOutra" class="hidden" placeholder="Digite outra quantidade" min="1" />
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>4. Informe seus dados</h2>
+
+      <label>Telefone para contato</label>
+      <input type="text" id="telefone" placeholder="55DDDNUMERO" />
+
+      <label>Email</label>
+      <input type="email" id="email" placeholder="Seu email" />
+
+      <label id="linkLabel">Link</label>
+      <input type="text" id="link_alvo" placeholder="Cole o link aqui" />
+
+      <label>Nome</label>
+      <input type="text" id="nome" placeholder="Seu nome" />
+
+      <div class="resumo">
+        <p><strong>Serviço:</strong> <span id="resumoServico">-</span></p>
+        <p><strong>Plano:</strong> <span id="resumoPlano">-</span></p>
+        <p><strong>Quantidade:</strong> <span id="resumoQuantidade">-</span></p>
+        <p><strong>Valor:</strong> R$ <span id="resumoValor">0,00</span></p>
+      </div>
+
+      <button id="btnGerar">Gerar pagamento</button>
+      <div id="status" class="status"></div>
+    </section>
+
+    <section id="resultado" class="card hidden">
+      <h2>Pagamento gerado</h2>
+      <p><strong>Pedido:</strong> <span id="pedidoNumero"></span></p>
+      <p><strong>Status:</strong> <span id="pedidoStatus"></span></p>
+      <p><strong>Valor:</strong> R$ <span id="pedidoValor"></span></p>
+
+      <label>Pix copia e cola</label>
+      <textarea id="qrCode" rows="6" readonly></textarea>
+
+      <a id="btnPagar" class="primary-link" target="_blank">Abrir link de pagamento</a>
+      <button id="btnCopiarPix">Copiar Pix</button>
+    </section>
   </div>
 
-  <script>
-    async function criarPedidoEAbrirWhatsApp() {
-      const status = document.getElementById("status");
-      status.innerText = "Gerando pedido...";
-
-      try {
-        const nome = document.getElementById("nome").value.trim();
-        const email = document.getElementById("email").value.trim();
-        const telefone = document.getElementById("telefone").value.replace(/\D/g, "");
-        const produto = document.getElementById("produto").value.trim();
-        const valor = Number(document.getElementById("valor").value);
-
-        if (!nome || !email || !telefone || !produto || !valor) {
-          status.innerText = "Preencha todos os campos.";
-          return;
-        }
-
-        const response = await fetch("/pedido", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            nome,
-            email,
-            produto,
-            valor
-          })
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          status.innerText = data.erro || "Erro ao criar pedido.";
-          return;
-        }
-
-        const mensagem =
-          `🛒 Pedido criado com sucesso!\n\n` +
-          `📦 Pedido: ${data.numero_pedido}\n` +
-          `💰 Valor: R$ ${Number(valor).toFixed(2)}\n` +
-          `📌 Produto: ${produto}\n\n` +
-          `👉 Pague pelo link:\n${data.ticket_url}\n\n` +
-          `📲 Pix copia e cola:\n${data.qr_code}\n\n` +
-          `⚡ Após o pagamento, a confirmação é automática.`;
-
-        const url = `https://wa.me/${telefone}?text=${encodeURIComponent(mensagem)}`;
-
-        status.innerText = "Abrindo WhatsApp...";
-        window.location.href = url;
-      } catch (error) {
-        console.log(error);
-        status.innerText = "Erro ao gerar pedido.";
-      }
-    }
-  </script>
+  <script src="/app.js"></script>
 </body>
 </html>

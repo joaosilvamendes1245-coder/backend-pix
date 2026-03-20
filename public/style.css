@@ -1,0 +1,162 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: linear-gradient(180deg, #0f172a, #111827);
+  color: white;
+}
+
+.container {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.hero {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.hero h1 {
+  margin-bottom: 8px;
+  font-size: 34px;
+}
+
+.hero p {
+  color: #cbd5e1;
+  margin: 0;
+}
+
+.card {
+  background: rgba(30, 41, 59, 0.96);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 18px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+}
+
+.card h2 {
+  margin-top: 0;
+  font-size: 22px;
+}
+
+label {
+  display: block;
+  margin-top: 14px;
+  margin-bottom: 6px;
+  font-weight: bold;
+  color: #e2e8f0;
+}
+
+input,
+textarea,
+button,
+.primary-link,
+.secondary-btn {
+  width: 100%;
+  border: none;
+  border-radius: 14px;
+  padding: 14px;
+  font-size: 16px;
+}
+
+input,
+textarea {
+  background: #334155;
+  color: white;
+  outline: none;
+}
+
+button,
+.primary-link,
+.secondary-btn {
+  cursor: pointer;
+  margin-top: 14px;
+  text-align: center;
+  text-decoration: none;
+  display: block;
+  font-weight: bold;
+}
+
+button,
+.primary-link {
+  background: #22c55e;
+  color: white;
+}
+
+.secondary-btn {
+  background: #3b82f6;
+  color: white;
+}
+
+.grid-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.qtd-grid {
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+}
+
+.option-card {
+  background: #0f172a;
+  border: 2px solid transparent;
+  border-radius: 16px;
+  padding: 16px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.option-card:hover {
+  transform: translateY(-2px);
+  border-color: #3b82f6;
+}
+
+.option-card.active {
+  border-color: #22c55e;
+  background: #132238;
+}
+
+.option-title {
+  font-size: 17px;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.option-subtitle {
+  font-size: 14px;
+  color: #cbd5e1;
+}
+
+.outros-box {
+  margin-top: 12px;
+}
+
+.resumo {
+  margin-top: 18px;
+  padding: 16px;
+  border-radius: 14px;
+  background: #0f172a;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.resumo p {
+  margin: 8px 0;
+}
+
+.status {
+  margin-top: 14px;
+  color: #facc15;
+  min-height: 20px;
+  font-weight: bold;
+}
+
+.hidden {
+  display: none;
+}
