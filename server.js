@@ -86,3 +86,39 @@ app.get("/status/:id", async (req, res) => {
 app.listen(process.env.PORT || 3000, () => {
   console.log(`Servidor rodando na porta ${process.env.PORT || 3000}`);
 });
+
+app.get("/pix", async (req, res) => {
+  try {
+    const { valor, email, nome, sobrenome } = req.query;
+
+    if (!valor || !email || !nome || !sobrenome) {
+      return res.json({ erro: "Faltando dados" });
+    }
+
+    const payment = new Payment(client);
+
+    const resultado = await payment.create({
+      body: {
+        transaction_amount: Number(valor),
+        description: "Pagamento via Pix",
+        payment_method_id: "pix",
+        payer: {
+          email: email,
+          first_name: nome,
+          last_name: sobrenome,
+        },
+      },
+    });
+
+    const dados = resultado.point_of_interaction?.transaction_data || {};
+
+    res.json({
+      id: resultado.id,
+      status: resultado.status,
+      qr_code: dados.qr_code,
+      ticket_url: dados.ticket_url,
+    });
+  } catch (error) {
+    res.json({ erro: error.message });
+  }
+});
